@@ -9,12 +9,12 @@ proc generateBuildID_Verilog {} {
 
 	# Create a Verilog file for output
 	set outputFileName "build_id.v"
-	
+
 	set fileData ""
 	if { [file exists $outputFileName]} {
 		set outputFile [open $outputFileName "r"]
 		set fileData [read $outputFile]
-		close $outputFile	
+		close $outputFile
 	}
 
 	if {$buildDate ne $fileData} {

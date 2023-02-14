@@ -197,17 +197,17 @@ assign LED_POWER[1]= 1;
 assign BUTTONS = 0;
 
 reg  [26:0] act_cnt;
-always @(posedge clk_sys) act_cnt <= act_cnt + 1'd1; 
+always @(posedge clk_sys) act_cnt <= act_cnt + 1'd1;
 assign LED_USER    = FB ? led[0] : act_cnt[26]  ? act_cnt[25:18]  > act_cnt[7:0]  : act_cnt[25:18]  <= act_cnt[7:0];
 
 wire [26:0] act_cnt2 = {~act_cnt[26],act_cnt[25:0]};
 assign LED_POWER[0]= FB ? led[2] : act_cnt2[26] ? act_cnt2[25:18] > act_cnt2[7:0] : act_cnt2[25:18] <= act_cnt2[7:0];
 
 
-`include "build_id.v" 
+`include "build_id.v"
 localparam CONF_STR = {
 	"MENU;UART31250,MIDI;",
-	"V,v",`BUILD_DATE 
+	"V,v",`BUILD_DATE
 };
 
 wire forced_scandoubler;
@@ -363,7 +363,7 @@ always @(posedge clk_sys) begin
 	end
 end
 
-////////////////////////////  MT32pi  ////////////////////////////////// 
+////////////////////////////  MT32pi  //////////////////////////////////
 
 //
 // Pin | USB Name | Signal
@@ -460,7 +460,7 @@ always @(posedge CLK_AUDIO) begin : i2s_proc
 		if (i2s_ws) mt32_i2s_l <= i2s_buf;
 		else        mt32_i2s_r <= i2s_buf;
 	end
-	
+
 	if (RESET) begin
 		i2s_buf    <= 0;
 		mt32_i2s_l <= 0;
@@ -491,7 +491,7 @@ always @(posedge CLK_VIDEO) begin
 	if(ce_pix) begin
 		if(hc == 637) begin
 			hc <= 0;
-			if(vc == (PAL ? (forced_scandoubler ? 623 : 311) : (forced_scandoubler ? 523 : 261))) begin 
+			if(vc == (PAL ? (forced_scandoubler ? 623 : 311) : (forced_scandoubler ? 523 : 261))) begin
 				vc <= 0;
 				vvc <= vvc + 9'd6;
 			end else begin
@@ -533,7 +533,7 @@ always @(posedge CLK_VIDEO) begin
 				else if (vc == 0) VBlank <= 0;
 		end
 	end
-	
+
 	if (hc == 590) HSync <= 0;
 end
 
