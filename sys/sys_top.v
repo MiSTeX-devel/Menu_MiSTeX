@@ -198,7 +198,7 @@ wire led_locked;
 `endif
 
 //LEDs on main board
-assign LED = (led_overtake & led_state) | (~led_overtake & {1'b0,led_locked,1'b0, ~led_p, 1'b0, ~led_d, 1'b0, ~led_u});
+assign LED = ~((led_overtake & led_state) | (~led_overtake & {1'b0,led_locked,1'b0, ~led_p, 1'b0, ~led_d, 1'b0, ~led_u}));
 
 wire btn_r, btn_o, btn_u;
 `ifdef MISTER_DUAL_SDRAM
