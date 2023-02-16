@@ -30,3 +30,8 @@ set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) m
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) sd_card.sv ]
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) hps_io.sv ]
 set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) hps_interface.v ]
+set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) pll_audio.v ]
+set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) pll_audio_0002.v ]
+set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) pll_cfg.v ]
+set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) pll_hdmi.v ]
+set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) pll_hdmi_0002.v ]
