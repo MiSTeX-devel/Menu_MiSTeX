@@ -106,7 +106,17 @@ module sys_top
 	inout         SDCD_SPDIF,
 
 	////////// MB LED ///////////
-	output  [7:0] LED
+	output  [7:0] LED,
+
+	/////// HPS INTERFACE ///////
+	input         HPS_SPI_MOSI,
+	output        HPS_SPI_MISO,
+	input         HPS_SPI_CLK,
+	input         HPS_SPI_CS,
+
+	input 	      HPS_FPGA_ENABLE,
+	input         HPS_OSD_ENABLE,
+	input         HPS_IO_ENABLE
 );
 
 wire [2:0] PLL_CLOCKS;
@@ -236,43 +246,24 @@ end
 
 // gp_in[31] = 0 - quick flag that FPGA is initialized (HPS reads 1 when FPGA is not in user mode)
 //                 used to avoid lockups while JTAG loading
-wire [31:0] gp_in = {1'b0, btn_user | btn[1], btn_osd | btn[0], SW[3], 8'd0, io_ver, io_ack, io_wide, io_dout | io_dout_sys};
+wire [31:0] gp_in = {1'b0, btn_user | btn[1], btn_osd | btn[0], SW[3], 8'd0, io_ver, 1'b0 /* io_ack */, io_wide, io_dout | io_dout_sys};
 wire [31:0] gp_out;
 
 wire  [1:0] io_ver = 1; // 0 - obsolete. 1 - optimized HPS I/O. 2,3 - reserved for future.
 wire        io_wait;
 wire        io_wide;
 wire [15:0] io_dout;
-wire [15:0] io_din = gp_outr[15:0];
-wire        io_clk = gp_outr[17];
-wire        io_ss0 = gp_outr[18];
-wire        io_ss1 = gp_outr[19];
-wire        io_ss2 = gp_outr[20];
+wire [15:0] io_din      = gp_out[15:0];
+wire        fpga_enable = gp_out[18];
+wire        osd_enable  = gp_out[19];
+wire        io_enable   = gp_out[20];
 
 `ifndef MISTER_DEBUG_NOHDMI
-wire io_osd_hdmi = io_ss1 & ~io_ss0;
+wire io_osd_hdmi = osd_enable & ~fpga_enable;
 `endif
 
-wire io_fpga     = ~io_ss1 & io_ss0;
-wire io_uio      = ~io_ss1 & io_ss2;
-
-reg  io_ack;
-reg  rack;
-wire io_strobe = ~rack & io_clk;
-
-always @(posedge clk_sys) begin
-	if(~(io_wait | vs_wait) | io_strobe) begin
-		rack <= io_clk;
-		io_ack <= rack;
-	end
-end
-
-reg [31:0] gp_outr;
-always @(posedge clk_sys) begin
-	reg [31:0] gp_outd;
-	gp_outr <= gp_outd;
-	gp_outd <= gp_out;
-end
+wire io_fpga     = ~osd_enable & fpga_enable;
+wire io_uio      = ~osd_enable & io_enable;
 
 `ifdef MISTER_DUAL_SDRAM
 	wire  [7:0] core_type  = 'hA8; // generic core, dual SDRAM.
@@ -282,6 +273,25 @@ end
 
 // HPS will not communicate to core if magic is different
 wire [31:0] core_magic = {24'h5CA623, core_type};
+
+wire io_strobe;
+hps_interface hps_interface (
+	.gp_in({~gp_out[31] ? core_magic : gp_in}),
+	.gp_out(gp_out),
+	.io_strobe(io_strobe),
+
+	.spi_mosi(HPS_SPI_MOSI),
+	.spi_miso(HPS_SPI_MISO),
+	.spi_clk(HPS_SPI_CLK),
+	.spi_cs(HPS_SPI_CS),
+
+	.fpga_enable(HPS_FPGA_ENABLE),
+	.osd_enable(HPS_OSD_ENABLE),
+	.io_enable(HPS_IO_ENABLE),
+
+	.clk_sys(clk_sys),
+	.reset(reset_req)
+);
 
 reg [15:0] cfg;
 
@@ -296,7 +306,7 @@ wire       direct_video = cfg[10];
 
 wire       audio_96k    = cfg[6];
 wire       csync_en     = cfg[3];
-wire       io_osd_vga   = io_ss1 & ~io_ss2;
+wire       io_osd_vga   = osd_enable & ~io_enable;
 `ifndef MISTER_DUAL_SDRAM
 	wire    ypbpr_en     = cfg[5];
 	wire    sog          = cfg[9];
@@ -567,7 +577,7 @@ end
 
 ////////////////////  SYSTEM MEMORY & SCALER  /////////////////////////
 
-wire reset;
+wire reset = reset_req;
 wire clk_100m;
 
 wire clk_pal = clk_audio;
