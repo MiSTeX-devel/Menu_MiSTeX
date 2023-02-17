@@ -271,12 +271,13 @@ wire io_uio      = ~osd_enable & io_enable;
 	wire  [7:0] core_type  = 'hA4; // generic core.
 `endif
 
+// TODO
 // HPS will not communicate to core if magic is different
 wire [31:0] core_magic = {24'h5CA623, core_type};
 
 wire io_strobe;
 hps_interface hps_interface (
-	.gp_in({~gp_out[31] ? core_magic : gp_in}),
+	.gp_in(gp_in),
 	.gp_out(gp_out),
 	.io_strobe(io_strobe),
 

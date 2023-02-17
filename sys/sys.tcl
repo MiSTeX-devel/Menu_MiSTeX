@@ -82,6 +82,8 @@ set_location_assignment PIN_Y3  -to HPS_SPI_MISO
 set_location_assignment PIN_U1  -to HPS_SPI_CLK
 set_location_assignment PIN_N1  -to HPS_SPI_CS
 
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to HPS_SPI_CLK
+
 # pmodb pins 5-7
 set_location_assignment PIN_AA1 -to HPS_FPGA_ENABLE
 set_location_assignment PIN_W2  -to HPS_OSD_ENABLE
