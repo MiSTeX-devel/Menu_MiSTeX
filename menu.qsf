@@ -51,7 +51,8 @@ set_global_assignment -name ALM_REGISTER_PACKING_EFFORT LOW
 set_global_assignment -name OPTIMIZE_POWER_DURING_SYNTHESIS OFF
 set_global_assignment -name ROUTER_REGISTER_DUPLICATION ON
 set_global_assignment -name FITTER_AGGRESSIVE_ROUTABILITY_OPTIMIZATION ALWAYS
-set_global_assignment -name SEED 1
+set_global_assignment -name SEED 42
+set_global_assignment -name TIMING_ANALYZER_MULTICORNER_ANALYSIS OFF
 
 source sys/sys.tcl
 #--------------------------

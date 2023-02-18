@@ -19,6 +19,7 @@ set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) i
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) alsa.sv ]
 set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) i2s.v ]
 set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) spi-slave.v ]
+set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) spi-master.v ]
 set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) spdif.v ]
 set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) audio_out.v ]
 set_global_assignment -name VERILOG_FILE       [file join $::quartus(qip_path) iir_filter.v ]

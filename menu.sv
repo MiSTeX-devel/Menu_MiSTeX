@@ -172,7 +172,8 @@ module emu
 	input   [6:0] USER_IN,
 	output  [6:0] USER_OUT,
 
-	input         OSD_STATUS
+	input         OSD_STATUS,
+	output   [7:0] DEBUG
 );
 
 assign ADC_BUS  = 'Z;
@@ -220,6 +221,7 @@ hps_io #(.CONF_STR(CONF_STR)) hps_io
 	.forced_scandoubler(forced_scandoubler),
 	.status(status),
 	.status_menumask(cfg)
+	//.DEBUG(DEBUG)
 );
 
 ////////////////////   CLOCKS   ///////////////////

@@ -1,7 +1,7 @@
 module hps_interface
 (
     // HPS interface
-    input      [31:0]  gp_in,
+    input      [15:0]  gp_in,
     output reg [31:0]  gp_out,
     output reg         io_strobe,
 
@@ -55,7 +55,7 @@ spi_slave spi_slave (
     .spi_device__sdi(mosi),
     .spi_device__cs(cs),
     .word_in(gp_word_out),
-    .word_out(gp_in[15:0]),
+    .word_out(gp_in),
     .word_complete(spi_rx_strobe),
     .clk(clk_sys),
     .rst(reset)
