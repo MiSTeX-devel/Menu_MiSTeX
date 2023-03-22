@@ -205,7 +205,7 @@ wire [26:0] act_cnt2 = {~act_cnt[26],act_cnt[25:0]};
 assign LED_POWER[0]= FB ? led[2] : act_cnt2[26] ? act_cnt2[25:18] > act_cnt2[7:0] : act_cnt2[25:18] <= act_cnt2[7:0];
 
 
-`include "build_id.v"
+`include "build_id.vh"
 localparam CONF_STR = {
 	"MENU;UART31250,MIDI;",
 	"V,v",`BUILD_DATE

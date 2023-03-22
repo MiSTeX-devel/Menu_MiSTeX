@@ -8,7 +8,7 @@ proc generateBuildID_Verilog {} {
 	set buildDate "`define BUILD_DATE \"[clock format [ clock seconds ] -format %y%m%d]\""
 
 	# Create a Verilog file for output
-	set outputFileName "build_id.v"
+	set outputFileName "build_id.vh"
 
 	set fileData ""
 	if { [file exists $outputFileName]} {
