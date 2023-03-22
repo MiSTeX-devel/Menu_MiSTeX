@@ -1,4 +1,4 @@
-# Startup core for MiSTy
+# Startup core for MiSTeX
 
 * **ESC** - switch to options
 * **F1** - switch the background
