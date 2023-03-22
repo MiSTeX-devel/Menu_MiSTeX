@@ -484,7 +484,7 @@ reg  [63:0] rnd_reg;
 wire  [5:0] rnd_c = {rnd_reg[0],rnd_reg[1],rnd_reg[2],rnd_reg[2],rnd_reg[2],rnd_reg[2]};
 wire [63:0] rnd;
 
-lfsr random(rnd);
+lfsr random(.out(rnd), .clk(CLK_50M), .rst(RESET));
 
 always @(posedge CLK_VIDEO) begin
 	if(forced_scandoubler) ce_pix <= 1;
