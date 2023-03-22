@@ -268,6 +268,7 @@ always @(posedge clk) begin
 	if(rd & ~old_rd) {ready, new_rd} <= {1'b0, 1'b1};
 end
 
+`ifdef ALTERA
 altddio_out
 #(
 	.extend_oe_disable("OFF"),
@@ -292,5 +293,22 @@ sdramclk_ddr
 	.sclr(1'b0),
 	.sset(1'b0)
 );
+`endif
+
+`ifdef XILINX
+ODDR #(
+	.DDR_CLK_EDGE("OPPOSITE_EDGE"),
+	.INIT(1'b0),
+	.SRTYPE("SYNC")
+) ODDR_inst (
+	.Q(SDRAM_CLK),
+	.C(clk),
+	.CE(CE),
+	.D1(1'b0),
+	.D2(1'b1),
+	.R(1'b0),
+	.S(1'b0)
+);
+`endif
 
 endmodule
