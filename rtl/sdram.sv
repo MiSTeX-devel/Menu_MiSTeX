@@ -56,6 +56,11 @@ module sdram
    output reg        ready        // dout is valid. Ready to accept new read/write.
 );
 
+`ifdef XILINX
+// VIVADO somehow doesn't get that we wrote reg above
+reg [15:0] SDRAM_DQ;
+`endif
+
 assign SDRAM_nCS  = chip;
 assign SDRAM_nRAS = command[2];
 assign SDRAM_nCAS = command[1];
