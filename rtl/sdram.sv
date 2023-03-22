@@ -308,7 +308,7 @@ ODDR #(
 ) ODDR_inst (
 	.Q(SDRAM_CLK),
 	.C(clk),
-	.CE(CE),
+	.CE(1'b1),
 	.D1(1'b0),
 	.D2(1'b1),
 	.R(1'b0),
