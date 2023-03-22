@@ -16,7 +16,8 @@ module hps_interface
     input osd_enable,
     input io_enable,
 
-    input  clk_sys,
+    input  sync_clk,
+    input  sys_clk,
     input  reset
 );
 
@@ -30,7 +31,7 @@ reg  fpga_en, _fpga_en;
 reg  osd_en,  _osd_en;
 reg  io_en,   _io_en;
 
-always @(posedge clk_sys) begin
+always @(posedge sync_clk) begin
     if (reset) begin
         cs <= 0;      _cs <= 0;
         mosi <= 0;    _mosi <= 0;
@@ -38,7 +39,6 @@ always @(posedge clk_sys) begin
         fpga_en <= 0; _fpga_en <= 0;
         osd_en <= 0;  _osd_en <= 0;
         io_en <= 0;   _io_en <= 0;
-
     end else begin
         cs      <= _cs;      _cs      <= spi_cs;
         mosi    <= _mosi;    _mosi    <= spi_mosi;
@@ -57,11 +57,11 @@ spi_slave spi_slave (
     .word_in(gp_word_out),
     .word_out(gp_in),
     .word_complete(spi_rx_strobe),
-    .clk(clk_sys),
+    .clk(sys_clk),
     .rst(reset)
 );
 
-always @(posedge clk_sys) begin
+always @(posedge sys_clk) begin
     if (reset) begin
         gp_out    <= 0;
         io_strobe <= 0;

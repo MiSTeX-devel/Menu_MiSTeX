@@ -39,7 +39,7 @@ module sys_top
 	output [23:0] HDMI_TX_D,
 	output        HDMI_TX_HS,
 	output        HDMI_TX_VS,
-
+	
 	input         HDMI_TX_INT,
 `endif
 
@@ -117,43 +117,22 @@ module sys_top
 	input 	      HPS_FPGA_ENABLE,
 	input         HPS_OSD_ENABLE,
 	input         HPS_IO_ENABLE,
+	input         HPS_CORE_RESET,
 	output  [3:0] DEBUG
 );
 
-wire [2:0] PLL_CLOCKS;
+wire FPGA_CLK1_50;
+wire FPGA_CLK2_50;
+wire FPGA_CLK3_50;
+wire SPI_CLK_100;
 
-ALTPLL #(
-	.BANDWIDTH_TYPE("AUTO"),
-	.CLK0_DIVIDE_BY(4'd12),
-	.CLK0_DUTY_CYCLE(6'd50),
-	.CLK0_MULTIPLY_BY(5'd12),
-	.CLK0_PHASE_SHIFT(1'd0),
-	.CLK1_DIVIDE_BY(4'd12),
-	.CLK1_DUTY_CYCLE(6'd50),
-	.CLK1_MULTIPLY_BY(5'd12),
-	.CLK1_PHASE_SHIFT(1'd0),
-	.CLK2_DIVIDE_BY(4'd12),
-	.CLK2_DUTY_CYCLE(6'd50),
-	.CLK2_MULTIPLY_BY(5'd12),
-	.CLK2_PHASE_SHIFT(1'd0),
-	.COMPENSATE_CLOCK("CLK0"),
-	.INCLK0_INPUT_FREQUENCY(24'd50000),
-	.OPERATION_MODE("NORMAL")
-) main_pll (
-	.ARESET(1'd0),
-	.CLKENA(5'd31),
-	.EXTCLKENA(4'd15),
-	.FBIN(1'd1),
+top_crg top_crg (
 	.INCLK(CLK_50),
-	.PFDENA(1'd1),
-	.PLLENA(1'd1),
-	.CLK(PLL_CLOCKS),
-	.LOCKED()
+	.FPGA_CLK1_50(FPGA_CLK1_50),
+	.FPGA_CLK2_50(FPGA_CLK2_50),
+	.FPGA_CLK3_50(FPGA_CLK3_50),
+	.SPI_CLK_100(SPI_CLK_100)
 );
-
-wire FPGA_CLK1_50 = PLL_CLOCKS[0];
-wire FPGA_CLK2_50 = PLL_CLOCKS[1];
-wire FPGA_CLK3_50 = PLL_CLOCKS[2];
 
 //////////////////////  Secondary SD  ///////////////////////////////////
 wire SD_CS, SD_CLK, SD_MOSI;
@@ -226,7 +205,7 @@ mcp23009 mcp23009
 `endif
 
 reg btn_user, btn_osd;
-always @(posedge FPGA_CLK2_50) begin
+always @(posedge FPGA_CLK2_50) begin : user_button_block
 	integer div;
 	reg [7:0] deb_user;
 	reg [7:0] deb_osd;
@@ -298,19 +277,22 @@ hps_interface hps_interface (
 	.osd_enable(HPS_OSD_ENABLE),
 	.io_enable(HPS_IO_ENABLE),
 
-	.clk_sys(clk_sys),
+	.sync_clk(SPI_CLK_100),
+	.sys_clk(clk_sys),
 	.reset(reset_req)
 );
 
+`ifdef DEBUG_GPOUT
 spi_master spi_debug (
-	.spi_controller__sdo(DEBUG[0]),
+	.spi_controller__sdo(DEBUG[1]),
 	.spi_controller__sck(DEBUG[2]),
 	.spi_controller__cs(DEBUG[3]),
 	.word_out({io_fpga, io_uio, gp_out[15:0], io_dout}),
 	.start_transfer(io_strobe),
 	.clk(clk_sys),
-	.rst(reset_req),
+	.rst(reset_req)
 	);
+`endif
 
 reg [15:0] cfg;
 
@@ -370,7 +352,7 @@ reg [12:0] arc1y = 0;
 reg [12:0] arc2x = 0;
 reg [12:0] arc2y = 0;
 
-always@(posedge clk_sys) begin
+always@(posedge clk_sys) begin : cmd_block
 	reg  [7:0] cmd;
 	reg        has_cmd;
 	reg  [7:0] cnt = 0;
@@ -575,13 +557,14 @@ cyclonev_hps_interface_interrupts interrupts
 
 ///////////////////////////  RESET  ///////////////////////////////////
 
-wire reset_req = 0;
+wire reset_req = HPS_CORE_RESET;
 
 ////////////////////  SYSTEM MEMORY & SCALER  /////////////////////////
 
 wire clk_100m;
 
 wire clk_pal = clk_audio;
+
 
 wire  [27:0] vbuf_address;
 wire   [7:0] vbuf_burstcount;
@@ -600,7 +583,7 @@ wire         freeze;
 `ifndef MISTER_DEBUG_NOHDMI
 wire clk_hdmi  = hdmi_clk_out;
 
-ascal
+ascal 
 #(
 	.RAMBASE(32'h20000000),
 `ifdef MISTER_SMALL_VBUF
@@ -784,7 +767,7 @@ reg [11:0] arx;
 reg [11:0] ary;
 reg        arxy;
 
-always @(posedge clk_vid) begin
+always @(posedge clk_vid) begin : video_calc_block
 	reg [11:0] hmini,hmaxi,vmini,vmaxi;
 	reg [11:0] wcalc,videow;
 	reg [11:0] hcalc,videoh;
@@ -815,7 +798,7 @@ always @(posedge clk_vid) begin
 		ary  <= ARY[11:0];
 		arxy <= ARX[12] | ARY[12];
 	end
-
+	
 	ar_md_start <= 0;
 	state <= state + 1'd1;
 	case(state)
@@ -871,7 +854,7 @@ always @(posedge clk_vid) begin
 				vmaxi <= ((HEIGHT - videoh)>>1) + videoh - 1'd1;
 			end
 	endcase
-
+	
 	hmin <= hmini;
 	hmax <= hmaxi;
 	vmin <= vmini;
@@ -908,14 +891,14 @@ wire        pal_wr;
 
 reg  [28:0] pal_addr;
 reg         pal_req = 0;
-always @(posedge clk_pal) begin
+always @(posedge clk_pal) begin : vs_block
 	reg old_vs1, old_vs2;
 
 	pal_addr <= LFB_BASE[31:3] - 29'd512;
 
 	old_vs1 <= hdmi_vs;
 	old_vs2 <= old_vs1;
-
+	
 	if(~old_vs2 & old_vs1 & ~FB_FMT[2] & FB_FMT[1] & FB_FMT[0] & FB_EN) pal_req <= ~pal_req;
 end
 
@@ -970,7 +953,7 @@ pll_cfg pll_cfg
 );
 
 reg cfg_got = 0;
-always @(posedge clk_sys) begin
+always @(posedge clk_sys) begin : vsd_block
 	reg vsd, vsd2;
 	if(~cfg_ready || ~cfg_set) cfg_got <= cfg_set;
 	else begin
@@ -981,16 +964,16 @@ always @(posedge clk_sys) begin
 end
 
 reg cfg_ready = 0;
-always @(posedge FPGA_CLK1_50) begin
+always @(posedge FPGA_CLK1_50) begin : gotd_block
 	reg gotd = 0, gotd2 = 0;
 	reg custd = 0, custd2 = 0;
 	reg old_wait = 0;
 
 	gotd  <= cfg_got;
 	gotd2 <= gotd;
-
+	
 	adj_write <= 0;
-
+	
 	custd <= cfg_custom_t;
 	custd2 <= custd;
 	if(custd2 != custd & ~gotd) begin
@@ -1099,7 +1082,7 @@ csync csync_hdmi(clk_hdmi, hdmi_hs_osd, hdmi_vs_osd, hdmi_cs_osd);
 
 reg [23:0] dv_data;
 reg        dv_hs, dv_vs, dv_de;
-always @(posedge clk_vid) begin
+always @(posedge clk_vid) begin : dv_block
 	reg [23:0] dv_d1, dv_d2;
 	reg        dv_de1, dv_de2, dv_hs1, dv_hs2, dv_vs1, dv_vs2;
 	reg [12:0] vsz, vcnt, vcnt_l, vcnt_ll;
@@ -1154,6 +1137,7 @@ cyclonev_clkselect hdmi_clk_sw
 assign hdmi_tx_clk = clk_vid;
 `endif
 
+`ifndef MISTER_DEBUG_NOHDMI
 altddio_out
 #(
 	.extend_oe_disable("OFF"),
@@ -1178,24 +1162,25 @@ hdmiclk_ddr
 	.sclr(1'b0),
 	.sset(1'b0)
 );
+`endif
 
 reg hdmi_out_hs;
 reg hdmi_out_vs;
 reg hdmi_out_de;
 reg [23:0] hdmi_out_d;
 
-always @(posedge hdmi_tx_clk) begin
+always @(posedge hdmi_tx_clk) begin : hdmi_out_block
 	reg [23:0] hdmi_dv_data;
 	reg        hdmi_dv_hs, hdmi_dv_vs, hdmi_dv_de;
 
 	reg hs,vs,de;
 	reg [23:0] d;
-
+	
 	hdmi_dv_data <= dv_data;
 	hdmi_dv_hs   <= dv_hs;
 	hdmi_dv_vs   <= dv_vs;
 	hdmi_dv_de   <= dv_de;
-
+	
 	hs <= (~vga_fb & direct_video) ? hdmi_dv_hs   : (direct_video & csync_en) ? hdmi_cs_osd : hdmi_hs_osd;
 	vs <= (~vga_fb & direct_video) ? hdmi_dv_vs   : hdmi_vs_osd;
 	de <= (~vga_fb & direct_video) ? hdmi_dv_de   : hdmi_de_osd;
@@ -1303,7 +1288,7 @@ csync csync_vga(clk_vid, vga_hs_osd, vga_vs_osd, vga_cs_osd);
 `endif
 
 reg video_sync = 0;
-always @(posedge clk_vid) begin
+always @(posedge clk_vid) begin : line_block
 	reg [11:0] line_cnt  = 0;
 	reg [11:0] sync_line = 0;
 	reg  [1:0] hs_cnt = 0;
@@ -1315,7 +1300,7 @@ always @(posedge clk_vid) begin
 		video_sync <= (sync_line == line_cnt);
 
 		line_cnt <= line_cnt + 1'd1;
-		if(~hs_cnt[1]) begin
+		if(~hs_cnt[1]) begin	
 			hs_cnt <= hs_cnt + 1'd1;
 			if(hs_cnt[0]) begin
 				sync_line <= (line_cnt - vs_line);
@@ -1372,8 +1357,10 @@ audio_out audio_out
 	.core_l(audio_l),
 	.core_r(audio_r),
 
+`ifndef MISTER_DISABLE_ALSA
 	.alsa_l(alsa_l),
 	.alsa_r(alsa_r),
+`endif
 
 	.i2s_bclk(HDMI_SCLK),
 	.i2s_lrclk(HDMI_LRCLK),
@@ -1616,8 +1603,8 @@ emu emu
 	.UART_DSR(uart_dtr),
 
 	.USER_OUT(user_out),
-	.USER_IN(user_in)
-	//.DEBUG(DEBUG)
+	.USER_IN(user_in),
+	.DEBUG(DEBUG)
 );
 
 endmodule
@@ -1627,7 +1614,7 @@ endmodule
 module sync_fix
 (
 	input clk,
-
+	
 	input sync_in,
 	output sync_out
 );
@@ -1635,7 +1622,7 @@ module sync_fix
 assign sync_out = sync_in ^ pol;
 
 reg pol;
-always @(posedge clk) begin
+always @(posedge clk) begin : pol_block
 	integer pos = 0, neg = 0, cnt = 0;
 	reg s1,s2;
 
@@ -1670,7 +1657,7 @@ module csync
 assign csync = (csync_vs ^ csync_hs);
 
 reg csync_hs, csync_vs;
-always @(posedge clk) begin
+always @(posedge clk) begin : h_cnt_block
 	reg prev_hs;
 	reg [15:0] h_cnt, line_len, hs_len;
 
@@ -1686,10 +1673,10 @@ always @(posedge clk) begin
 		end
 		else hs_len <= h_cnt;
 	end
-
+	
 	if (~vsync) csync_hs <= hsync;
 	else if(h_cnt == line_len) csync_hs <= 1;
-
+	
 	csync_vs <= vsync;
 end
 

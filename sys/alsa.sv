@@ -26,7 +26,7 @@ module alsa
 (
 	input             reset,
 	input             clk,
-
+	
 	output reg [31:3] ram_address,
 	input      [63:0] ram_data,
 	output reg        ram_req = 0,

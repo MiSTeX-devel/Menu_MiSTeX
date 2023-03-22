@@ -1,0 +1,17 @@
+mainfile: menu.sv
+
+sourcedirs:
+  - sys
+  - rtl
+
+quartus:
+  sourcefiles:
+    - sys/sys_top.sdc
+    - rtl/pll_0002.v
+    - sys/pll_audio_0002.v
+    - sys/pll_hdmi_0002.v
+
+vivado:
+  sourcefiles:
+    - rtl/pll_0002-xilinx7.v
+    - sys/pll_audio_0002-xilinx7.v
