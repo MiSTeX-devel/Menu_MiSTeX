@@ -1,6 +1,9 @@
 mainfile: menu.sv
 use-template-sys: True
 
+defines:
+  OSD_HEADER: 1
+
 sourcedirs:
   - sys
   - rtl
