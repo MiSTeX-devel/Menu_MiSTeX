@@ -11,14 +11,14 @@
 // This source file is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published
 // by the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version. 
+// (at your option) any later version.
 //
 // This source file is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of 
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the 
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License 
+// You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 // ------------------------------------------
@@ -32,10 +32,10 @@ module sdram
    input             clk,         // clock ~100MHz
                                   //
                                   // SDRAM_* - signals to the MT48LC16M16 chip
-   inout  reg [15:0] SDRAM_DQ,    // 16 bit bidirectional data bus
+   inout wire [15:0] SDRAM_DQ,    // 16 bit bidirectional data bus
    output reg [12:0] SDRAM_A,     // 13 bit multiplexed address bus
    output reg        SDRAM_DQML,  // two byte masks
-   output reg        SDRAM_DQMH,  // 
+   output reg        SDRAM_DQMH,  //
    output reg  [1:0] SDRAM_BA,    // two banks
    output            SDRAM_nCS,   // a single chip select
    output            SDRAM_nWE,   // write enable
@@ -56,10 +56,6 @@ module sdram
    output reg        ready        // dout is valid. Ready to accept new read/write.
 );
 
-`ifdef XILINX
-// VIVADO somehow doesn't get that we wrote reg above
-reg [15:0] SDRAM_DQ;
-`endif
 
 assign SDRAM_nCS  = chip;
 assign SDRAM_nRAS = command[2];
@@ -97,7 +93,11 @@ reg  [2:0] command = CMD_NOP;
 reg [26:0] save_addr;
 reg        chip = 0;
 
+reg        oe;
+reg [15:0] dq;
 reg [15:0] data;
+
+assign SDRAM_DQ = oe ? dq : 16'hz;
 
 typedef enum
 {
@@ -122,7 +122,7 @@ always @(posedge clk) begin
 
 	state_t state = STATE_STARTUP;
 
-	SDRAM_DQ <= 16'bZ;
+	oe      <= 1'b0;
 	command <= CMD_NOP;
 	refresh_count  <= refresh_count+1'b1;
 
@@ -135,19 +135,19 @@ always @(posedge clk) begin
 			//------------------------------------------------------------------------
 			//-- This is the initial startup state, where we wait for at least 100us
 			//-- before starting the start sequence
-			//-- 
-			//-- The initialisation is sequence is 
+			//--
+			//-- The initialisation is sequence is
 			//--  * de-assert SDRAM_CKE
-			//--  * 100us wait, 
+			//--  * 100us wait,
 			//--  * assert SDRAM_CKE
-			//--  * wait at least one cycle, 
+			//--  * wait at least one cycle,
 			//--  * PRECHARGE
 			//--  * wait 2 cycles
-			//--  * REFRESH, 
+			//--  * REFRESH,
 			//--  * tREF wait
-			//--  * REFRESH, 
-			//--  * tREF wait 
-			//--  * LOAD_MODE_REG 
+			//--  * REFRESH,
+			//--  * tREF wait
+			//--  * LOAD_MODE_REG
 			//--  * 2 cycles wait
 			//------------------------------------------------------------------------
 			SDRAM_A    <= 0;
@@ -174,7 +174,7 @@ always @(posedge clk) begin
 				command     <= CMD_LOAD_MODE;
 				SDRAM_A     <= MODE;
 			end
-			
+
 			ready <= 0;
 
 			//------------------------------------------------------
@@ -200,7 +200,7 @@ always @(posedge clk) begin
 			// mask possible refresh to reduce colliding.
 			if(refresh_count > cycles_per_refresh) begin
             //------------------------------------------------------------------------
-            //-- Start the refresh cycle. 
+            //-- Start the refresh cycle.
             //-- This tasks tRFC (66ns), so 6 idle cycles are needed @ 100MHz
             //------------------------------------------------------------------------
 				chip     <= 1;
@@ -254,10 +254,10 @@ always @(posedge clk) begin
 		end
 
 		STATE_WRITE: begin
-			state       <= STATE_IDLE_5;
-			command     <= CMD_WRITE;
-			SDRAM_DQ    <= new_wtbt ? new_data : {new_data[7:0], new_data[7:0]};
-			ready       <= 1;
+			state     <= STATE_IDLE_5;
+			command   <= CMD_WRITE;
+			{dq, oe}  <= {new_wtbt ? new_data : {new_data[7:0], new_data[7:0]}, 1'b1};
+			ready     <= 1;
 		end
 	endcase
 
