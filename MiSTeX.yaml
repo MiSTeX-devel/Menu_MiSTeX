@@ -1,7 +1,5 @@
 mainfile: menu.sv
-
 use-template-sys: True
-delay-hps-miso: 6
 
 defines:
   OSD_HEADER: 1
